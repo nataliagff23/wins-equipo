@@ -138,8 +138,8 @@
     const AT = {
       token:  "patE3pKIZVZjdmNFC.0a09eae0d53eca689c7e01868b16839260d2d84f942f86379878dba4d5cf4413",
       baseId: "appT08Cl4u2lVE1Td",
-      wins:   "WINS - Imperians",
-      retos:  "Retos",
+      wins:   "WinsBoard",
+      retos:  "RetosBoard",
     };
     // ────────────────────────────────────────────────────────────────────
 
@@ -341,7 +341,7 @@
         try {
           const rec = await atCreate(AT.wins, { "WIN":wf.description, Categoria:wf.category, Responsable:wf.author, Cliente:wf.client, Fecha:todayStr(), DesdReto:false, Mes:cm, Anio:cy });
           setWins(w=>[winFromRecord(rec),...w]);
-        } catch { setError("Error al guardar el win en Airtable."); }
+        } catch(err) { setError("Error al guardar win: "+err.message); }
         setWf({description:"",category:WIN_CATEGORIES[0],author:"",client:""});
       };
 
@@ -351,7 +351,7 @@
         try {
           const rec = await atCreate(AT.retos, { Descripcion:cf.description, Autor:cf.author, Tipo:cf.week, Fecha:todayStr(), Resuelto:false });
           setChallenges(c=>[retoFromRecord(rec),...c]);
-        } catch { setError("Error al guardar el reto en Airtable."); }
+        } catch(err) { setError("Error al guardar reto: "+err.message); }
         setCf({description:"",week:CHALLENGE_TYPES[0],author:""});
       };
 
@@ -364,7 +364,7 @@
           setChallenges(cs=>cs.map(c=>c.id===solveModal?{...c,solved:true}:c));
           const rec = await atCreate(AT.wins, { "WIN":sf.note||ch.description, Categoria:"KPI Superado", Responsable:sf.author, Cliente:"Interno", Fecha:todayStr(), DesdReto:true, Mes:cm, Anio:cy });
           setWins(w=>[winFromRecord(rec),...w]);
-        } catch { setError("Error al resolver el reto en Airtable."); }
+        } catch(err) { setError("Error al resolver reto: "+err.message); }
       };
 
       const tMsg=fillPct>=100?"🏆 ¡Meta del mes completada! El equipo lo logró — trabajo extraordinario."
