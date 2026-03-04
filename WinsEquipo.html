@@ -339,7 +339,9 @@
       const todayStr=()=>{const d=new Date();return `${d.getDate()} ${MONTH_NAMES[d.getMonth()].slice(0,3).toLowerCase()} ${d.getFullYear()}`;};
 
       const addWin=async(e)=>{
-        if(!wf.description.trim())return;
+        if(!wf.description.trim()){setError("Escribe una descripción del win.");return;}
+        if(!wf.author){setError("Selecciona quién logró el win.");return;}
+        if(!wf.client){setError("Selecciona un cliente.");return;}
         boom(e);
         setShowWinForm(false);
         try {
@@ -350,7 +352,8 @@
       };
 
       const addChallenge=async()=>{
-        if(!cf.description.trim())return;
+        if(!cf.description.trim()){setError("Escribe una descripción del reto.");return;}
+        if(!cf.author){setError("Selecciona quién propone el reto.");return;}
         setShowChallengeForm(false);
         try {
           const rec = await atCreate(AT.retos, { Descripcion:cf.description, Autor:cf.author, Tipo:cf.week, Fecha:todayStr(), Resuelto:false });
