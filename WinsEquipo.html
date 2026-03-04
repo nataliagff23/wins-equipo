@@ -105,6 +105,8 @@
     .fl{display:block;font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase}
     .fi,.fs,.fta{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;padding:10px 12px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color .18s}
     .fi:focus,.fs:focus,.fta:focus{border-color:rgba(201,168,76,.4);box-shadow:none}
+    select.fi{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239AABBE' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer}
+    select.fi option{background:var(--card);color:var(--text)}
     .fta{resize:vertical;min-height:78px}
     .fs{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23506070' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
     .fs option{background:#0F1E35;color:var(--text)}
@@ -143,8 +145,10 @@
     };
     // ────────────────────────────────────────────────────────────────────
 
-    const WIN_CATEGORIES = ["Nuevo Cliente", "Campaña Exitosa", "Upsell", "Retención", "Reconocimiento", "KPI Superado"];
+    const WIN_CATEGORIES = ["Campaña exitosa","Retención","Reconocimiento","Más ventas","Más Leads","Más conversaciones","Logro personal","Mejoró el proyecto","Retos generales","Otro"];
     const CHALLENGE_TYPES = ["Semana actual","Reto general","Reto urgente","Reto mensual"];
+    const CLIENTS = ["Redemtion Law","Masshopping","Adriana Drive US","Drive US","Ensurity Group","Braganza","SB Serrano Bustamante","CDA Miramar","Arepa Boleta","Fiat Ve","Ron La Joya | Oilstone","Yira Cars","Geral Real Estate","Compresores CA | Tu Tienda Conservica","Clinica Médica Lilburn","EMBI Hotel","Flow Park","MR Solutions","Gallium de Colombia","Geral + Natalya Chacon"];
+    const TEAM = ["Brando Paz","Scarlay Gutierres","Brian Guerra","Maria Belén Escalona","Estefany Do Nascimiento","Glorianny","Andrea Petit","Natalia Goncalves"];
     const MONTHLY_GOAL = 20;
     const MONTH_NAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
@@ -465,9 +469,15 @@
                 <div className="fg"><label className="fl">¿Cuál fue el logro?</label>
                   <textarea className="fta" placeholder="Ej: Cerramos contrato con Nike por $150K..." value={wf.description} onChange={e=>setWf(f=>({...f,description:e.target.value}))}/></div>
                 <div className="fg"><label className="fl">¿Quién lo logró?</label>
-                  <input className="fi" type="text" placeholder="Nombre completo" value={wf.author} onChange={e=>setWf(f=>({...f,author:e.target.value}))}/></div>
+                  <select className="fi" value={wf.author} onChange={e=>setWf(f=>({...f,author:e.target.value}))}>
+                    <option value="">Selecciona una persona</option>
+                    {TEAM.map(t=><option key={t} value={t}>{t}</option>)}
+                  </select></div>
                 <div className="fg"><label className="fl">Cliente</label>
-                  <input className="fi" type="text" placeholder="Nombre del cliente" value={wf.client} onChange={e=>setWf(f=>({...f,client:e.target.value}))}/></div>
+                  <select className="fi" value={wf.client} onChange={e=>setWf(f=>({...f,client:e.target.value}))}>
+                    <option value="">Selecciona un cliente</option>
+                    {CLIENTS.map(c=><option key={c} value={c}>{c}</option>)}
+                  </select></div>
                 <div className="fg"><label className="fl">Categoría</label>
                   <div className="pills">
                     {WIN_CATEGORIES.map(c=>(
@@ -490,7 +500,10 @@
                 <div className="fg"><label className="fl">Describe el reto</label>
                   <textarea className="fta" placeholder="Ej: Reactivar cuenta de Samsung..." value={cf.description} onChange={e=>setCf(f=>({...f,description:e.target.value}))}/></div>
                 <div className="fg"><label className="fl">¿Quién lo propone?</label>
-                  <input className="fi" type="text" placeholder="Nombre completo" value={cf.author} onChange={e=>setCf(f=>({...f,author:e.target.value}))}/></div>
+                  <select className="fi" value={cf.author} onChange={e=>setCf(f=>({...f,author:e.target.value}))}>
+                    <option value="">Selecciona una persona</option>
+                    {TEAM.map(t=><option key={t} value={t}>{t}</option>)}
+                  </select></div>
                 <div className="fg"><label className="fl">Tipo</label>
                   <div className="pills">
                     {CHALLENGE_TYPES.map(o=>(
@@ -512,7 +525,10 @@
                 <div className="m-title">¡Reto <span>Superado! 🚀</span></div>
                 <p style={{fontSize:12,color:"var(--muted)",marginBottom:16}}>Este reto se convertirá automáticamente en un WIN del equipo 🏆</p>
                 <div className="fg"><label className="fl">¿Quién lo resolvió?</label>
-                  <input className="fi" type="text" placeholder="Nombre completo" value={sf.author} onChange={e=>setSf(f=>({...f,author:e.target.value}))}/></div>
+                  <select className="fi" value={sf.author} onChange={e=>setSf(f=>({...f,author:e.target.value}))}>
+                    <option value="">Selecciona una persona</option>
+                    {TEAM.map(t=><option key={t} value={t}>{t}</option>)}
+                  </select></div>
                 <div className="fg"><label className="fl">¿Cómo lo resolvieron? (opcional)</label>
                   <textarea className="fta" placeholder="Cuéntale al equipo cómo lo lograron..." value={sf.note} onChange={e=>setSf(f=>({...f,note:e.target.value}))}/></div>
                 <div className="factions">
