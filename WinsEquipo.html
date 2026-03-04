@@ -192,8 +192,8 @@
 
     // WINS - Imperians: WIN, Responsable, Fecha, Categoria, Cliente, Mes, Anio, DesdReto
     const winFromRecord  = (rec) => ({ _id:rec.id, id:rec.id, description:rec.fields["WIN"]||"", category:rec.fields.Categoria||"", author:rec.fields.Responsable||"", client:rec.fields.Cliente||"", date:rec.fields.Fecha||"", fromChallenge:!!rec.fields.DesdReto, month:rec.fields.Mes??0, year:rec.fields.Anio??0 });
-    // Retos: Descripcion, Autor, Tipo, Fecha, Resuelto
-    const retoFromRecord = (rec) => ({ _id:rec.id, id:rec.id, description:rec.fields.Descripcion||"", author:rec.fields.Autor||"", week:rec.fields.Tipo||"", date:rec.fields.Fecha||"", solved:!!rec.fields.Resuelto });
+    // Retos: Descripcion, Autor, Tipo, Fecha, Resuelto, Resolucion, ResueltoPor
+    const retoFromRecord = (rec) => ({ _id:rec.id, id:rec.id, description:rec.fields.Descripcion||"", author:rec.fields.Autor||"", week:rec.fields.Tipo||"", date:rec.fields.Fecha||"", solved:!!rec.fields.Resuelto, resolucion:rec.fields.Resolucion||"", resueltoPor:rec.fields.ResueltoPor||"" });
 
     function Particle({ x, y, color, onDone }) {
       useEffect(() => { const t = setTimeout(onDone, 1400); return () => clearTimeout(t); }, []);
@@ -377,8 +377,8 @@
         boom(e);
         setSolveModal(null); setSf({author:"",note:""}); setView("wins");
         try {
-          await atUpdate(AT.retos, ch._id, { Resuelto:true });
-          setChallenges(cs=>cs.map(c=>c.id===solveModal?{...c,solved:true}:c));
+          await atUpdate(AT.retos, ch._id, { Resuelto:true, Resolucion:sf.note||"", ResueltoPor:sf.author||"" });
+          setChallenges(cs=>cs.map(c=>c.id===solveModal?{...c,solved:true,resolucion:sf.note||"",resueltoPor:sf.author||""}:c));
           const rec = await atCreate(AT.wins, { "WIN":sf.note||ch.description, Categoria:"KPI Superado", Responsable:sf.author, Cliente:"Interno", Fecha:todayStr(), DesdReto:true, Mes:cm, Anio:cy });
           setWins(w=>[winFromRecord(rec),...w]);
         } catch(err) { setError("Error al resolver reto: "+err.message); }
@@ -414,7 +414,7 @@
           filename=`wins_${MONTH_NAMES[cm]}_${cy}.csv`;
         }else{
           const mr=challenges;
-          csv="Descripcion,Autor,Tipo,Fecha,Resuelto\n"+mr.map(r=>`"${r.description}","${r.author}","${r.week}","${r.date}","${r.solved?"Sí":"No"}"`).join("\n");
+          csv="Descripcion,Autor,Tipo,Fecha,Resuelto,Resuelto Por,Como se resolvio\n"+mr.map(r=>`"${r.description}","${r.author}","${r.week}","${r.date}","${r.solved?"Sí":"No"}","${r.resueltoPor}","${r.resolucion}"`).join("\n");
           filename=`retos_${MONTH_NAMES[cm]}_${cy}.csv`;
         }
         const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
