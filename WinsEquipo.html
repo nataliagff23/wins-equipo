@@ -127,10 +127,39 @@
     .btn-no:hover{border-color:rgba(255,255,255,.15);color:var(--text)}
     .empty{text-align:center;padding:55px 20px;color:var(--muted);font-size:14px}
 
-    @media(max-width:660px){
-      .nav{padding:0 14px}.t-box{flex-direction:column;text-align:center;padding:20px}
-      .main,.tabs,.t-outer{padding-left:14px;padding-right:14px}
+    @media(max-width:768px){
+      .nav{height:auto;padding:10px 14px;flex-wrap:wrap;gap:8px}
+      .nav-sep{display:none}
+      .nav-spacer{display:none}
+      .nbtn{padding:6px 10px;font-size:11px}
+      .nbtn.cta{order:1;width:100%;justify-content:center;padding:10px}
+      .t-outer{padding:0 14px;margin-top:18px}
+      .t-box{flex-direction:column;text-align:center;padding:18px;gap:16px}
+      .tl{order:-1}
+      .t-float svg{width:120px;height:auto}
+      .t-month{font-size:18px}
+      .t-sub{font-size:12px;margin-bottom:12px}
+      .t-msg{font-size:12px}
+      .tabs{padding:0 14px;margin-top:16px;overflow-x:auto}
+      .tab{white-space:nowrap;padding:8px 14px;font-size:11px}
+      .main{padding:0 14px 80px}
+      .sec-hdr{flex-direction:column;align-items:flex-start;gap:10px}
       .grid{grid-template-columns:1fr}
+      .card{padding:14px}
+      .row-top{flex-wrap:wrap;gap:5px}
+      .modal{padding:22px;margin:10px;max-height:90vh;overflow-y:auto}
+      .m-title{font-size:15px}
+      .pills{gap:4px}
+      .pill{font-size:10px;padding:4px 10px}
+      .dl-btn{font-size:11px;padding:6px 10px}
+      .add-btn{font-size:11px;padding:6px 12px}
+    }
+    @media(max-width:380px){
+      .nav-brand{gap:6px}
+      .nav-name{font-size:12px}
+      .t-float svg{width:95px;height:auto}
+      .t-month{font-size:16px}
+      .prog-lbls{font-size:10px}
     }
   </style>
 </head>
