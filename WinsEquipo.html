@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Imperians Agency — Win Board</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    @keyframes cfetti{0%{transform:translate(0,0) rotate(0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(.15);opacity:0}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pulseGlow{0%,100%{opacity:.3;transform:scale(.9)}50%{opacity:.7;transform:scale(1.1)}}
+    @keyframes popIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+    @keyframes slideIn{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+    @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    @keyframes shimmer{0%{transform:translateX(-120%)}100%{transform:translateX(250%)}}
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#07101E;--nav:#022841;--surface:#0C1830;--card:#0F1E35;--card2:#122040;
+      --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.04);
+      --gold:#C9A84C;--gold2:#E8C547;--gold3:#FFD700;
+      --purple:#6B4EFF;--text:#E4EBF5;--text2:#9AABBE;--muted:#506070;--green:#22C55E;
+    }
+    body{background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);min-height:100vh}
+
+    .app{min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#0F2040 0%,#07101E 60%)}
+
+    .nav{height:58px;background:var(--nav);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;position:sticky;top:0;z-index:50}
+    .nav-brand{display:flex;align-items:center;gap:10px}
+    .nav-text{display:flex;flex-direction:column}
+    .nav-name{font-size:14px;font-weight:700;color:var(--text)}
+    .nav-name em{color:var(--gold2);font-style:normal}
+    .nav-sub{font-size:10px;color:var(--muted);letter-spacing:.05em;margin-top:1px}
+    .nav-sep{width:1px;height:28px;background:var(--border);margin:0 4px}
+    .nav-spacer{flex:1}
+    .nbtn{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .18s}
+    .nbtn:hover{background:rgba(255,255,255,.05);color:var(--text);border-color:rgba(255,255,255,.13)}
+    .nbtn.act{background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.3);color:var(--gold2)}
+    .nbtn.cta{background:var(--purple);border-color:var(--purple);color:#fff;font-weight:600}
+    .nbtn.cta:hover{background:#5A3EEE}
+
+    .t-outer{max-width:1240px;margin:28px auto 0;padding:0 28px}
+    .t-box{display:flex;gap:24px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px 36px;position:relative;overflow:hidden}
+    .t-box::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.35),transparent)}
+    .t-box::after{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:400px;height:140px;background:radial-gradient(ellipse,rgba(201,168,76,.07) 0%,transparent 70%);pointer-events:none}
+    .tl{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0}
+    .t-float{animation:floatY 4s ease-in-out infinite}
+    .t-count{font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.04em}
+    .tr{flex:1}
+    .t-month{font-size:22px;font-weight:700;color:var(--gold2);margin-bottom:3px}
+    .t-sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+    .prog{background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:50px;height:10px;overflow:hidden;margin-bottom:8px}
+    .prog-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,#7A5A0A,#C9A84C,#FFD700,#C9A84C);background-size:200% 100%;transition:width 1.2s cubic-bezier(.22,.8,.44,1);position:relative;overflow:hidden}
+    .prog-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);animation:shimmer 2.8s infinite}
+    .prog-lbls{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:14px}
+    .prog-lbls b{color:var(--gold2);font-size:13px;font-weight:600}
+    .t-msg{padding:11px 15px;border-radius:9px;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.12);font-size:13px;line-height:1.6;color:var(--text2)}
+
+    .tabs{max-width:1240px;margin:22px auto 0;padding:0 28px;display:flex;gap:4px}
+    .tab{font-size:12px;font-weight:600;letter-spacing:.03em;padding:8px 18px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .18s}
+    .tab:hover{color:var(--text2);border-color:rgba(255,255,255,.12)}
+    .tab.act{background:rgba(201,168,76,.1);color:var(--gold2);border-color:rgba(201,168,76,.28)}
+    .tab.ch{background:rgba(107,78,255,.1);color:#A78BFA;border-color:rgba(107,78,255,.25)}
+
+    .main{max-width:1240px;margin:20px auto;padding:0 28px 60px}
+    .sec-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+    .sec-title{font-size:16px;font-weight:700;color:var(--text)}
+    .sec-title span{color:var(--gold2)}
+    .add-btn{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:8px 16px;border-radius:7px;border:1px solid rgba(201,168,76,.35);background:rgba(201,168,76,.08);color:var(--gold2);cursor:pointer;transition:all .18s}
+    .add-btn:hover{background:var(--gold2);color:#07101E;border-color:var(--gold2)}
+    .add-btn.purple{border-color:rgba(107,78,255,.4);background:rgba(107,78,255,.1);color:#A78BFA}
+    .add-btn.purple:hover{background:#6B4EFF;color:#fff;border-color:#6B4EFF}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(315px,1fr));gap:14px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;overflow:hidden;animation:fadeUp .32s ease both;transition:all .2s}
+    .card:hover{border-color:rgba(201,168,76,.25);transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.35)}
+    .card.challenge:not(.solved):hover{border-color:rgba(107,78,255,.25)}
+    .card.solved{opacity:.45}
+    .card-shine{display:none}
+    .solved-tag{position:absolute;top:12px;right:12px;font-size:10px;font-weight:600;color:var(--green);background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);padding:3px 9px;border-radius:50px;letter-spacing:.07em}
+    .row-top{display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+    .tag-gold{font-size:10px;font-weight:600;padding:3px 9px;border-radius:50px;letter-spacing:.06em;background:rgba(201,168,76,.1);color:var(--gold);border:1px solid rgba(201,168,76,.22)}
+    .tag-dim{font-size:10px;font-weight:500;padding:3px 9px;border-radius:50px;background:rgba(255,255,255,.04);color:var(--muted);border:1px solid var(--border2)}
+    .date-lbl{margin-left:auto;font-size:11px;color:var(--muted)}
+    .card-quote{font-size:13.5px;line-height:1.65;color:var(--text2);margin-bottom:14px;font-style:italic}
+    .card-body{font-size:13.5px;line-height:1.65;color:var(--text2);margin-bottom:14px}
+    .row-bot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .client-lbl{font-size:11px;color:var(--muted)}
+    .author{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:500;color:var(--text2)}
+    .ava{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#07101E;flex-shrink:0;background:linear-gradient(135deg,#C9A84C,#E8C547);border:1px solid rgba(201,168,76,.4)}
+    .ava.sm{width:22px;height:22px;font-size:8px}
+    .solve-btn{font-size:11px;font-weight:600;padding:6px 12px;border-radius:6px;border:1px solid rgba(107,78,255,.3);background:rgba(107,78,255,.08);color:#A78BFA;cursor:pointer;transition:all .18s;white-space:nowrap}
+    .solve-btn:hover{background:#6B4EFF;color:#fff;border-color:#6B4EFF}
+
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+    .modal{background:var(--card2);border:1px solid var(--border);border-radius:16px;padding:32px;width:100%;max-width:460px;animation:slideIn .25s ease}
+    .modal::before{content:'';display:block;width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.3),transparent);margin-bottom:20px}
+    .m-title{font-size:17px;font-weight:700;margin-bottom:18px}
+    .m-title span{color:var(--gold2)}
+    .fg{margin-bottom:12px}
+    .fl{display:block;font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase}
+    .fi,.fs,.fta{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:7px;padding:10px 12px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color .18s}
+    .fi:focus,.fs:focus,.fta:focus{border-color:rgba(201,168,76,.4);box-shadow:none}
+    .fta{resize:vertical;min-height:78px}
+    .fs{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23506070' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+    .fs option{background:#0F1E35;color:var(--text)}
+    .pills{display:flex;flex-wrap:wrap;gap:6px}
+    .pill{padding:5px 13px;border-radius:50px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--muted);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif}
+    .pill:hover{border-color:rgba(201,168,76,.3);color:var(--text2)}
+    .pill.sel{border-color:var(--gold2);background:rgba(201,168,76,.12);color:var(--gold2);font-weight:600}
+    .pill.selp{border-color:#A78BFA;background:rgba(107,78,255,.12);color:#A78BFA;font-weight:600}
+    .factions{display:flex;gap:8px;margin-top:20px}
+    .btn-ok{flex:1;font-size:12px;font-weight:700;letter-spacing:.06em;padding:12px;border-radius:7px;border:none;cursor:pointer;background:linear-gradient(135deg,#9A6F0A,#C9A84C,#E8C547);color:#07101E;transition:all .18s;text-transform:uppercase}
+    .btn-ok:hover{opacity:.9;transform:scale(1.015)}
+    .btn-ok.p{background:linear-gradient(135deg,#4B36B8,#6B4EFF,#8B72FF);color:#fff}
+    .btn-no{font-size:12px;padding:12px 16px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
+    .btn-no:hover{border-color:rgba(255,255,255,.15);color:var(--text)}
+    .empty{text-align:center;padding:55px 20px;color:var(--muted);font-size:14px}
+
+    @media(max-width:660px){
+      .nav{padding:0 14px}.t-box{flex-direction:column;text-align:center;padding:20px}
+      .main,.tabs,.t-outer{padding-left:14px;padding-right:14px}
+      .grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect } = React;
+
+    // ── CONFIGURACIÓN AIRTABLE ──────────────────────────────────────────
+    const AT = {
+      token:  "patE3pKIZVZjdmNFC.0a09eae0d53eca689c7e01868b16839260d2d84f942f86379878dba4d5cf4413",
+      baseId: "appT08Cl4u2lVE1Td",
+      wins:   "WINS - Imperians",
+      retos:  "Retos",
+    };
+    // ────────────────────────────────────────────────────────────────────
+
+    const WIN_CATEGORIES = ["Nuevo Cliente", "Campaña Exitosa", "Upsell", "Retención", "Reconocimiento", "KPI Superado"];
+    const CHALLENGE_TYPES = ["Semana actual","Reto general","Reto urgente","Reto mensual"];
+    const MONTHLY_GOAL = 20;
+    const MONTH_NAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+    const initials = (name) => {
+      if (!name?.trim()) return "?";
+      const parts = name.trim().split(" ");
+      return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+    };
+
+    const atUrl  = (table, id="") => `https://api.airtable.com/v0/${AT.baseId}/${encodeURIComponent(table)}${id ? "/"+id : ""}`;
+    const atHdr  = () => ({ "Authorization": `Bearer ${AT.token}`, "Content-Type": "application/json" });
+
+    const atGetAll = async (table) => {
+      let records = [], offset = "";
+      do {
+        const url = atUrl(table) + (offset ? `?offset=${offset}` : "");
+        const r = await fetch(url, { headers: atHdr() });
+        const d = await r.json();
+        if (d.error) throw new Error(d.error.message);
+        records = records.concat(d.records || []);
+        offset = d.offset || "";
+      } while (offset);
+      return records;
+    };
+    const atCreate = async (table, fields) => {
+      const r = await fetch(atUrl(table), { method:"POST", headers:atHdr(), body:JSON.stringify({fields}) });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error.message);
+      return d;
+    };
+    const atUpdate = async (table, id, fields) => {
+      const r = await fetch(atUrl(table, id), { method:"PATCH", headers:atHdr(), body:JSON.stringify({fields}) });
+      const d = await r.json();
+      if (d.error) throw new Error(d.error.message);
+      return d;
+    };
+
+    // WINS - Imperians: WIN, Responsable, Fecha, Categoria, Cliente, Mes, Anio, DesdReto
+    const winFromRecord  = (rec) => ({ _id:rec.id, id:rec.id, description:rec.fields["WIN"]||"", category:rec.fields.Categoria||"", author:rec.fields.Responsable||"", client:rec.fields.Cliente||"", date:rec.fields.Fecha||"", fromChallenge:!!rec.fields.DesdReto, month:rec.fields.Mes??0, year:rec.fields.Anio??0 });
+    // Retos: Descripcion, Autor, Tipo, Fecha, Resuelto
+    const retoFromRecord = (rec) => ({ _id:rec.id, id:rec.id, description:rec.fields.Descripcion||"", author:rec.fields.Autor||"", week:rec.fields.Tipo||"", date:rec.fields.Fecha||"", solved:!!rec.fields.Resuelto });
+
+    function Particle({ x, y, color, onDone }) {
+      useEffect(() => { const t = setTimeout(onDone, 1400); return () => clearTimeout(t); }, []);
+      return <div style={{
+        position:"fixed", left:x, top:y, width:7, height:7,
+        background:color, borderRadius:Math.random()>.5?"50%":"2px",
+        pointerEvents:"none", zIndex:9999,
+        animation:"cfetti 1.3s ease-out forwards",
+        "--dx":`${(Math.random()-.5)*240}px`,
+        "--dy":`${-(Math.random()*300+80)}px`,
+        "--rot":`${Math.random()*720}deg`,
+      }} />;
+    }
+
+    function ImperiansLogo({ size = 36 }) {
+      return <img src="Branding Imperians/logo.png" height={size} style={{objectFit:"contain",display:"block"}}/>;
+    }
+
+    function TrophyCup({ fillPercent }) {
+      const c = Math.min(100, Math.max(0, fillPercent));
+      const full = c >= 100;
+      const liquidTop = 155 - (133 * c / 100);
+
+      return (
+        <div style={{ position:"relative", display:"inline-block" }}>
+          <svg width="175" height="212" viewBox="0 0 175 212" fill="none">
+            <defs>
+              <clipPath id="cup"><path d="M40 20 L135 20 L121 130 Q116 152 87 157 Q58 152 53 130 Z"/></clipPath>
+              <linearGradient id="gOuter" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#7A5A0A"/>
+                <stop offset="35%" stopColor="#D4AF37"/>
+                <stop offset="65%" stopColor="#FFD700"/>
+                <stop offset="100%" stopColor="#7A5A0A"/>
+              </linearGradient>
+              <linearGradient id="gLiq" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#FFE566" stopOpacity=".97"/>
+                <stop offset="100%" stopColor="#B8820A" stopOpacity=".9"/>
+              </linearGradient>
+            </defs>
+            <path d="M40 20 L135 20 L121 130 Q116 154 87 159 Q58 154 53 130 Z" fill="rgba(0,0,0,.4)" transform="translate(3,4)"/>
+            <g clipPath="url(#cup)">
+              <rect x="38" y={liquidTop} width="99" height={155-liquidTop} fill="url(#gLiq)"
+                style={{transition:"y 1s cubic-bezier(.22,.8,.44,1),height 1s cubic-bezier(.22,.8,.44,1)"}}/>
+              {c>2 && c<99 && <ellipse cx="87" cy={liquidTop} rx="49" ry="5" fill="#FFE566" opacity=".55"
+                style={{transition:"cy 1s cubic-bezier(.22,.8,.44,1)"}}/>}
+            </g>
+            <path d="M40 20 L135 20 L121 130 Q116 152 87 157 Q58 152 53 130 Z" fill="none" stroke="url(#gOuter)" strokeWidth="3.5"/>
+            <path d="M56 32 L68 30 L66 108 Q64 133 60 143" fill="none" stroke="rgba(255,248,180,.22)" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M40 36 Q7 36 7 72 Q7 106 40 104" fill="none" stroke="url(#gOuter)" strokeWidth="3.5"/>
+            <path d="M135 36 Q168 36 168 72 Q168 106 135 104" fill="none" stroke="url(#gOuter)" strokeWidth="3.5"/>
+            <rect x="38" y="16" width="99" height="9" rx="3.5" fill="url(#gOuter)"/>
+            <rect x="41" y="17.5" width="26" height="3" rx="1.5" fill="rgba(255,255,200,.32)"/>
+            <rect x="80" y="157" width="15" height="27" rx="2" fill="url(#gOuter)"/>
+            <rect x="53" y="184" width="69" height="14" rx="5" fill="url(#gOuter)"/>
+            <rect x="57" y="186" width="20" height="3.5" rx="1.5" fill="rgba(255,255,200,.28)"/>
+            {full && <text x="87" y="102" textAnchor="middle" fontSize="29" style={{animation:"popIn .5s ease"}}>⭐</text>}
+          </svg>
+          {full && (
+            <div style={{position:"absolute",inset:-28,background:"radial-gradient(circle,rgba(255,215,0,.2) 0%,transparent 70%)",animation:"pulseGlow 2s infinite",pointerEvents:"none",borderRadius:"50%"}}/>
+          )}
+        </div>
+      );
+    }
+
+    function WinCard({ win, delay=0 }) {
+      return (
+        <div className="card" style={{animationDelay:`${delay}ms`}}>
+          <div className="card-shine"/>
+          <div className="row-top">
+            <span className="tag-gold">{win.category}</span>
+            {win.fromChallenge && <span className="tag-dim">⚔️ Reto</span>}
+            <span className="date-lbl">{win.date}</span>
+          </div>
+          <p className="card-quote">"{win.description}"</p>
+          <div className="row-bot">
+            <span className="client-lbl">🏢 {win.client}</span>
+            <div className="author">
+              <div className="ava">{initials(win.author)}</div>
+              <span>{win.author}</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ChallengeCard({ challenge, onSolve }) {
+      return (
+        <div className={`card challenge ${challenge.solved?"solved":""}`}>
+          {challenge.solved && <div className="solved-tag">✅ RESUELTO</div>}
+          <div className="row-top">
+            <span className="tag-dim">{challenge.week}</span>
+            <span className="date-lbl">{challenge.date}</span>
+          </div>
+          <p className="card-body">{challenge.description}</p>
+          <div className="row-bot">
+            <div className="author">
+              <div className="ava sm">{initials(challenge.author)}</div>
+              <span style={{fontSize:12,color:"var(--muted)"}}>Por {challenge.author}</span>
+            </div>
+            {!challenge.solved && (
+              <button className="solve-btn" onClick={()=>onSolve(challenge.id)}>¡Lo resolví! 🚀</button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function AgencyWins() {
+      const now = new Date();
+      const cm = now.getMonth(), cy = now.getFullYear();
+
+      const [view, setView] = useState("wins");
+      const [wins, setWins] = useState([]);
+      const [challenges, setChallenges] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState("");
+      const [showWinForm, setShowWinForm] = useState(false);
+      const [showChallengeForm, setShowChallengeForm] = useState(false);
+      const [solveModal, setSolveModal] = useState(null);
+      const [particles, setParticles] = useState([]);
+      const pid = useRef(0);
+      const [wf, setWf] = useState({description:"",category:WIN_CATEGORIES[0],author:"",client:""});
+      const [cf, setCf] = useState({description:"",week:CHALLENGE_TYPES[0],author:""});
+      const [sf, setSf] = useState({author:"",note:""});
+
+      useEffect(() => {
+        (async () => {
+          try {
+            const [wRecs, rRecs] = await Promise.all([atGetAll(AT.wins), atGetAll(AT.retos)]);
+            setWins(wRecs.map(winFromRecord).reverse());
+            setChallenges(rRecs.map(retoFromRecord).reverse());
+          } catch(e) {
+            setError("No se pudo conectar con Airtable. Revisa tu token y Base ID.");
+          } finally { setLoading(false); }
+        })();
+      }, []);
+
+      const monthWins = wins.filter(w=>w.month===cm&&w.year===cy).length;
+      const fillPct = Math.min(100,(monthWins/MONTHLY_GOAL)*100);
+
+      const boom = (e) => {
+        const cols = ["#FFD700","#FFF176","#FFAB00","#E8C547","#fff","#C9A84C","#FFE082","#FFC107"];
+        const cx=e?.clientX??window.innerWidth/2, cy2=e?.clientY??window.innerHeight/2;
+        setParticles(p=>[...p,...Array.from({length:50},()=>({id:pid.current++,x:cx,y:cy2,color:cols[Math.floor(Math.random()*cols.length)]}))]);
+      };
+
+      const todayStr=()=>new Date().toLocaleDateString("es-MX",{day:"numeric",month:"short"});
+
+      const addWin=async(e)=>{
+        if(!wf.description.trim())return;
+        boom(e);
+        setShowWinForm(false);
+        try {
+          const rec = await atCreate(AT.wins, { "WIN":wf.description, Categoria:wf.category, Responsable:wf.author, Cliente:wf.client, Fecha:todayStr(), DesdReto:false, Mes:cm, Anio:cy });
+          setWins(w=>[winFromRecord(rec),...w]);
+        } catch { setError("Error al guardar el win en Airtable."); }
+        setWf({description:"",category:WIN_CATEGORIES[0],author:"",client:""});
+      };
+
+      const addChallenge=async()=>{
+        if(!cf.description.trim())return;
+        setShowChallengeForm(false);
+        try {
+          const rec = await atCreate(AT.retos, { Descripcion:cf.description, Autor:cf.author, Tipo:cf.week, Fecha:todayStr(), Resuelto:false });
+          setChallenges(c=>[retoFromRecord(rec),...c]);
+        } catch { setError("Error al guardar el reto en Airtable."); }
+        setCf({description:"",week:CHALLENGE_TYPES[0],author:""});
+      };
+
+      const solveChallenge=async(e)=>{
+        const ch=challenges.find(c=>c.id===solveModal);
+        boom(e);
+        setSolveModal(null); setSf({author:"",note:""}); setView("wins");
+        try {
+          await atUpdate(AT.retos, ch._id, { Resuelto:true });
+          setChallenges(cs=>cs.map(c=>c.id===solveModal?{...c,solved:true}:c));
+          const rec = await atCreate(AT.wins, { "WIN":sf.note||ch.description, Categoria:"KPI Superado", Responsable:sf.author, Cliente:"Interno", Fecha:todayStr(), DesdReto:true, Mes:cm, Anio:cy });
+          setWins(w=>[winFromRecord(rec),...w]);
+        } catch { setError("Error al resolver el reto en Airtable."); }
+      };
+
+      const tMsg=fillPct>=100?"🏆 ¡Meta del mes completada! El equipo lo logró — trabajo extraordinario."
+        :fillPct>=70?`🔥 ¡Casi! Faltan solo ${MONTHLY_GOAL-monthWins} wins para llenar la copa.`
+        :fillPct>=40?`⚡ Van ${monthWins} wins. ¡Cada victoria cuenta! Faltan ${MONTHLY_GOAL-monthWins} para la meta.`
+        :`🚀 Cada win llena la copa del equipo. ¡A lograr cosas grandes este mes!`;
+
+      return (
+        <>
+          {error && (
+            <div style={{position:"fixed",bottom:20,left:"50%",transform:"translateX(-50%)",background:"#1a0a0a",border:"1px solid rgba(255,80,80,.3)",color:"#ff8080",padding:"10px 20px",borderRadius:8,fontSize:12,zIndex:9999,maxWidth:420,textAlign:"center"}}>
+              ⚠️ {error} <button onClick={()=>setError("")} style={{marginLeft:10,background:"none",border:"none",color:"#ff8080",cursor:"pointer",fontSize:14}}>✕</button>
+            </div>
+          )}
+          <div className="app">
+            {particles.map(p=>(
+              <Particle key={p.id} x={p.x} y={p.y} color={p.color} onDone={()=>setParticles(ps=>ps.filter(x=>x.id!==p.id))}/>
+            ))}
+
+            <nav className="nav">
+              <div className="nav-brand">
+                <ImperiansLogo size={36}/>
+                <div className="nav-text">
+                  <div className="nav-name">Imperians <em>Agency</em></div>
+                  <div className="nav-sub">Win Board del equipo</div>
+                </div>
+              </div>
+              <div className="nav-sep"/>
+              <div className="nav-spacer"/>
+              <button className={`nbtn ${view==="wins"?"act":""}`} onClick={()=>setView("wins")}>🏆 Wins</button>
+              <button className={`nbtn ${view==="challenges"?"act":""}`} onClick={()=>setView("challenges")}>⚔️ Retos</button>
+              <button className="nbtn cta" onClick={()=>view==="wins"?setShowWinForm(true):setShowChallengeForm(true)}>
+                + {view==="wins"?"Nuevo Win":"Nuevo Reto"}
+              </button>
+            </nav>
+
+            <div className="t-outer">
+              <div className="t-box">
+                <div className="tl">
+                  <div className="t-float"><TrophyCup fillPercent={fillPct}/></div>
+                  <div className="t-count">{monthWins} / {MONTHLY_GOAL} wins</div>
+                </div>
+                <div className="tr">
+                  <div className="t-month">Wins de {MONTH_NAMES[cm]}</div>
+                  <div className="t-sub">Meta mensual del equipo — cada win llena la copa</div>
+                  <div className="prog"><div className="prog-fill" style={{width:`${fillPct}%`}}/></div>
+                  <div className="prog-lbls">
+                    <span>0</span>
+                    <span><b>{monthWins}</b> wins este mes</span>
+                    <span>Meta: {MONTHLY_GOAL}</span>
+                  </div>
+                  <div className="t-msg">{tMsg}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="tabs">
+              <button className={`tab ${view==="wins"?"act":""}`} onClick={()=>setView("wins")}>🏆 Wins ({wins.length})</button>
+              <button className={`tab ${view==="challenges"?"ch":""}`} onClick={()=>setView("challenges")}>⚔️ Retos ({challenges.filter(c=>!c.solved).length} activos)</button>
+            </div>
+
+            <div className="main">
+              {view==="wins" && (
+                <>
+                  <div className="sec-hdr">
+                    <div className="sec-title">Victorias del equipo <span>✦</span></div>
+                    <button className="add-btn" onClick={()=>setShowWinForm(true)}>+ Agregar Win</button>
+                  </div>
+                  {loading
+                    ? <div className="empty">Cargando wins desde Airtable…</div>
+                    : wins.length===0
+                    ? <div className="empty">¡El equipo aún no tiene wins. ¡Sean los primeros!</div>
+                    : <div className="grid">{wins.map((w,i)=><WinCard key={w.id} win={w} delay={i*55}/>)}</div>
+                  }
+                </>
+              )}
+              {view==="challenges" && (
+                <>
+                  <div className="sec-hdr">
+                    <div className="sec-title">Retos del equipo <span>✦</span></div>
+                    <button className="add-btn purple" onClick={()=>setShowChallengeForm(true)}>+ Nuevo Reto</button>
+                  </div>
+                  {loading
+                    ? <div className="empty">Cargando retos desde Airtable…</div>
+                    : challenges.length===0
+                    ? <div className="empty">No hay retos activos.</div>
+                    : <div className="grid">{challenges.map((c,i)=><ChallengeCard key={c.id} challenge={c} onSolve={setSolveModal}/>)}</div>
+                  }
+                </>
+              )}
+            </div>
+          </div>
+
+          {showWinForm && (
+            <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowWinForm(false)}>
+              <div className="modal">
+                <div className="m-title">Agregar <span>Win 🏆</span></div>
+                <div className="fg"><label className="fl">¿Cuál fue el logro?</label>
+                  <textarea className="fta" placeholder="Ej: Cerramos contrato con Nike por $150K..." value={wf.description} onChange={e=>setWf(f=>({...f,description:e.target.value}))}/></div>
+                <div className="fg"><label className="fl">¿Quién lo logró?</label>
+                  <input className="fi" type="text" placeholder="Nombre completo" value={wf.author} onChange={e=>setWf(f=>({...f,author:e.target.value}))}/></div>
+                <div className="fg"><label className="fl">Cliente</label>
+                  <input className="fi" type="text" placeholder="Nombre del cliente" value={wf.client} onChange={e=>setWf(f=>({...f,client:e.target.value}))}/></div>
+                <div className="fg"><label className="fl">Categoría</label>
+                  <div className="pills">
+                    {WIN_CATEGORIES.map(c=>(
+                      <button key={c} className={`pill ${wf.category===c?"sel":""}`} onClick={()=>setWf(f=>({...f,category:c}))}>{c}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="factions">
+                  <button className="btn-no" onClick={()=>setShowWinForm(false)}>Cancelar</button>
+                  <button className="btn-ok" onClick={addWin}>¡Publicar Win!</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showChallengeForm && (
+            <div className="overlay" onClick={e=>e.target===e.currentTarget&&setShowChallengeForm(false)}>
+              <div className="modal">
+                <div className="m-title">Nuevo <span style={{color:"#A78BFA"}}>Reto ⚔️</span></div>
+                <div className="fg"><label className="fl">Describe el reto</label>
+                  <textarea className="fta" placeholder="Ej: Reactivar cuenta de Samsung..." value={cf.description} onChange={e=>setCf(f=>({...f,description:e.target.value}))}/></div>
+                <div className="fg"><label className="fl">¿Quién lo propone?</label>
+                  <input className="fi" type="text" placeholder="Nombre completo" value={cf.author} onChange={e=>setCf(f=>({...f,author:e.target.value}))}/></div>
+                <div className="fg"><label className="fl">Tipo</label>
+                  <div className="pills">
+                    {CHALLENGE_TYPES.map(o=>(
+                      <button key={o} className={`pill ${cf.week===o?"selp":""}`} onClick={()=>setCf(f=>({...f,week:o}))}>{o}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="factions">
+                  <button className="btn-no" onClick={()=>setShowChallengeForm(false)}>Cancelar</button>
+                  <button className="btn-ok p" onClick={addChallenge}>Publicar Reto</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {solveModal && (
+            <div className="overlay" onClick={e=>e.target===e.currentTarget&&setSolveModal(null)}>
+              <div className="modal">
+                <div className="m-title">¡Reto <span>Superado! 🚀</span></div>
+                <p style={{fontSize:12,color:"var(--muted)",marginBottom:16}}>Este reto se convertirá automáticamente en un WIN del equipo 🏆</p>
+                <div className="fg"><label className="fl">¿Quién lo resolvió?</label>
+                  <input className="fi" type="text" placeholder="Nombre completo" value={sf.author} onChange={e=>setSf(f=>({...f,author:e.target.value}))}/></div>
+                <div className="fg"><label className="fl">¿Cómo lo resolvieron? (opcional)</label>
+                  <textarea className="fta" placeholder="Cuéntale al equipo cómo lo lograron..." value={sf.note} onChange={e=>setSf(f=>({...f,note:e.target.value}))}/></div>
+                <div className="factions">
+                  <button className="btn-no" onClick={()=>setSolveModal(null)}>Cancelar</button>
+                  <button className="btn-ok" onClick={solveChallenge}>Convertir en Win 🎊</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<AgencyWins />);
+  </script>
+</body>
+</html>
