@@ -332,7 +332,7 @@
         setParticles(p=>[...p,...Array.from({length:50},()=>({id:pid.current++,x:cx,y:cy2,color:cols[Math.floor(Math.random()*cols.length)]}))]);
       };
 
-      const todayStr=()=>new Date().toLocaleDateString("es-MX",{day:"numeric",month:"short"});
+      const todayStr=()=>{const d=new Date();return `${d.getDate()} ${MONTH_NAMES[d.getMonth()].slice(0,3).toLowerCase()} ${d.getFullYear()}`;};
 
       const addWin=async(e)=>{
         if(!wf.description.trim())return;
