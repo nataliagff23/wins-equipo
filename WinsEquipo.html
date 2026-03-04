@@ -95,9 +95,8 @@
     .ava.sm{width:22px;height:22px;font-size:8px}
     .solve-btn{font-size:11px;font-weight:600;padding:6px 12px;border-radius:6px;border:1px solid rgba(107,78,255,.3);background:rgba(107,78,255,.08);color:#A78BFA;cursor:pointer;transition:all .18s;white-space:nowrap}
     .solve-btn:hover{background:#6B4EFF;color:#fff;border-color:#6B4EFF}
-    .edit-btn{font-size:10px;padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;transition:all .18s;position:absolute;top:12px;right:12px}
+    .edit-btn{font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;transition:all .18s;margin-left:auto;flex-shrink:0}
     .edit-btn:hover{border-color:rgba(201,168,76,.3);color:var(--gold2);background:rgba(201,168,76,.08)}
-    .card.challenge .edit-btn{right:auto;left:12px}
     .dl-btn{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .18s}
     .dl-btn:hover{background:rgba(255,255,255,.05);color:var(--text);border-color:rgba(255,255,255,.13)}
 
@@ -263,11 +262,11 @@
       return (
         <div className="card" style={{animationDelay:`${delay}ms`}}>
           <div className="card-shine"/>
-          <button className="edit-btn" onClick={()=>onEdit(win)}>✏️ Editar</button>
           <div className="row-top">
             <span className="tag-gold">{win.category}</span>
             {win.fromChallenge && <span className="tag-dim">⚔️ Reto</span>}
             <span className="date-lbl">{win.date}</span>
+            <button className="edit-btn" onClick={()=>onEdit(win)}>✏️</button>
           </div>
           <p className="card-quote">"{win.description}"</p>
           <div className="row-bot">
@@ -285,10 +284,10 @@
       return (
         <div className={`card challenge ${challenge.solved?"solved":""}`}>
           {challenge.solved && <div className="solved-tag">✅ RESUELTO</div>}
-          <button className="edit-btn" onClick={()=>onEdit(challenge)}>✏️ Editar</button>
           <div className="row-top">
             <span className="tag-dim">{challenge.week}</span>
             <span className="date-lbl">{challenge.date}</span>
+            <button className="edit-btn" onClick={()=>onEdit(challenge)}>✏️</button>
           </div>
           <p className="card-body">{challenge.description}</p>
           <div className="row-bot">
