@@ -95,6 +95,11 @@
     .ava.sm{width:22px;height:22px;font-size:8px}
     .solve-btn{font-size:11px;font-weight:600;padding:6px 12px;border-radius:6px;border:1px solid rgba(107,78,255,.3);background:rgba(107,78,255,.08);color:#A78BFA;cursor:pointer;transition:all .18s;white-space:nowrap}
     .solve-btn:hover{background:#6B4EFF;color:#fff;border-color:#6B4EFF}
+    .edit-btn{font-size:10px;padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;transition:all .18s;position:absolute;top:12px;right:12px}
+    .edit-btn:hover{border-color:rgba(201,168,76,.3);color:var(--gold2);background:rgba(201,168,76,.08)}
+    .card.challenge .edit-btn{right:auto;left:12px}
+    .dl-btn{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:7px 14px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .18s}
+    .dl-btn:hover{background:rgba(255,255,255,.05);color:var(--text);border-color:rgba(255,255,255,.13)}
 
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
     .modal{background:var(--card2);border:1px solid var(--border);border-radius:16px;padding:32px;width:100%;max-width:460px;animation:slideIn .25s ease}
@@ -254,10 +259,11 @@
       );
     }
 
-    function WinCard({ win, delay=0 }) {
+    function WinCard({ win, delay=0, onEdit }) {
       return (
         <div className="card" style={{animationDelay:`${delay}ms`}}>
           <div className="card-shine"/>
+          <button className="edit-btn" onClick={()=>onEdit(win)}>✏️ Editar</button>
           <div className="row-top">
             <span className="tag-gold">{win.category}</span>
             {win.fromChallenge && <span className="tag-dim">⚔️ Reto</span>}
@@ -275,10 +281,11 @@
       );
     }
 
-    function ChallengeCard({ challenge, onSolve }) {
+    function ChallengeCard({ challenge, onSolve, onEdit }) {
       return (
         <div className={`card challenge ${challenge.solved?"solved":""}`}>
           {challenge.solved && <div className="solved-tag">✅ RESUELTO</div>}
+          <button className="edit-btn" onClick={()=>onEdit(challenge)}>✏️ Editar</button>
           <div className="row-top">
             <span className="tag-dim">{challenge.week}</span>
             <span className="date-lbl">{challenge.date}</span>
@@ -314,6 +321,10 @@
       const [wf, setWf] = useState({description:"",category:WIN_CATEGORIES[0],author:"",client:""});
       const [cf, setCf] = useState({description:"",week:CHALLENGE_TYPES[0],author:""});
       const [sf, setSf] = useState({author:"",note:""});
+      const [editWin, setEditWin] = useState(null);
+      const [editChallenge, setEditChallenge] = useState(null);
+      const [ew, setEw] = useState({description:"",category:"",author:"",client:""});
+      const [ec, setEc] = useState({description:"",author:"",week:""});
 
       useEffect(() => {
         (async () => {
@@ -372,6 +383,45 @@
           const rec = await atCreate(AT.wins, { "WIN":sf.note||ch.description, Categoria:"KPI Superado", Responsable:sf.author, Cliente:"Interno", Fecha:todayStr(), DesdReto:true, Mes:cm, Anio:cy });
           setWins(w=>[winFromRecord(rec),...w]);
         } catch(err) { setError("Error al resolver reto: "+err.message); }
+      };
+
+      const openEditWin=(w)=>{setEw({description:w.description,category:w.category,author:w.author,client:w.client});setEditWin(w);};
+      const saveEditWin=async()=>{
+        if(!ew.description.trim()){setError("Escribe una descripción del win.");return;}
+        const id=editWin._id;
+        setEditWin(null);
+        try{
+          await atUpdate(AT.wins,id,{"WIN":ew.description,Categoria:ew.category,Responsable:ew.author,Cliente:ew.client});
+          setWins(ws=>ws.map(w=>w._id===id?{...w,description:ew.description,category:ew.category,author:ew.author,client:ew.client}:w));
+        }catch(err){setError("Error al editar win: "+err.message);}
+      };
+
+      const openEditChallenge=(c)=>{setEc({description:c.description,author:c.author,week:c.week});setEditChallenge(c);};
+      const saveEditChallenge=async()=>{
+        if(!ec.description.trim()){setError("Escribe una descripción del reto.");return;}
+        const id=editChallenge._id;
+        setEditChallenge(null);
+        try{
+          await atUpdate(AT.retos,id,{Descripcion:ec.description,Autor:ec.author,Tipo:ec.week});
+          setChallenges(cs=>cs.map(c=>c._id===id?{...c,description:ec.description,author:ec.author,week:ec.week}:c));
+        }catch(err){setError("Error al editar reto: "+err.message);}
+      };
+
+      const downloadCSV=(type)=>{
+        let csv, filename;
+        if(type==="wins"){
+          const mw=wins.filter(w=>w.month===cm&&w.year===cy);
+          csv="WIN,Responsable,Cliente,Categoria,Fecha\n"+mw.map(w=>`"${w.description}","${w.author}","${w.client}","${w.category}","${w.date}"`).join("\n");
+          filename=`wins_${MONTH_NAMES[cm]}_${cy}.csv`;
+        }else{
+          const mr=challenges;
+          csv="Descripcion,Autor,Tipo,Fecha,Resuelto\n"+mr.map(r=>`"${r.description}","${r.author}","${r.week}","${r.date}","${r.solved?"Sí":"No"}"`).join("\n");
+          filename=`retos_${MONTH_NAMES[cm]}_${cy}.csv`;
+        }
+        const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement("a");a.href=url;a.download=filename;a.click();
+        URL.revokeObjectURL(url);
       };
 
       const tMsg=fillPct>=100?"🏆 ¡Meta del mes completada! El equipo lo logró — trabajo extraordinario."
@@ -438,13 +488,16 @@
                 <>
                   <div className="sec-hdr">
                     <div className="sec-title">Victorias del equipo <span>✦</span></div>
-                    <button className="add-btn" onClick={()=>setShowWinForm(true)}>+ Agregar Win</button>
+                    <div style={{display:"flex",gap:8}}>
+                      <button className="dl-btn" onClick={()=>downloadCSV("wins")}>📥 Descargar mes</button>
+                      <button className="add-btn" onClick={()=>setShowWinForm(true)}>+ Agregar Win</button>
+                    </div>
                   </div>
                   {loading
                     ? <div className="empty">Cargando wins desde Airtable…</div>
                     : wins.length===0
                     ? <div className="empty">¡El equipo aún no tiene wins. ¡Sean los primeros!</div>
-                    : <div className="grid">{wins.map((w,i)=><WinCard key={w.id} win={w} delay={i*55}/>)}</div>
+                    : <div className="grid">{wins.map((w,i)=><WinCard key={w.id} win={w} delay={i*55} onEdit={openEditWin}/>)}</div>
                   }
                 </>
               )}
@@ -452,13 +505,16 @@
                 <>
                   <div className="sec-hdr">
                     <div className="sec-title">Retos del equipo <span>✦</span></div>
-                    <button className="add-btn purple" onClick={()=>setShowChallengeForm(true)}>+ Nuevo Reto</button>
+                    <div style={{display:"flex",gap:8}}>
+                      <button className="dl-btn" onClick={()=>downloadCSV("retos")}>📥 Descargar retos</button>
+                      <button className="add-btn purple" onClick={()=>setShowChallengeForm(true)}>+ Nuevo Reto</button>
+                    </div>
                   </div>
                   {loading
                     ? <div className="empty">Cargando retos desde Airtable…</div>
                     : challenges.length===0
                     ? <div className="empty">No hay retos activos.</div>
-                    : <div className="grid">{challenges.map((c,i)=><ChallengeCard key={c.id} challenge={c} onSolve={setSolveModal}/>)}</div>
+                    : <div className="grid">{challenges.map((c,i)=><ChallengeCard key={c.id} challenge={c} onSolve={setSolveModal} onEdit={openEditChallenge}/>)}</div>
                   }
                 </>
               )}
@@ -537,6 +593,63 @@
                 <div className="factions">
                   <button className="btn-no" onClick={()=>setSolveModal(null)}>Cancelar</button>
                   <button className="btn-ok" onClick={solveChallenge}>Convertir en Win 🎊</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {editWin && (
+            <div className="overlay" onClick={e=>e.target===e.currentTarget&&setEditWin(null)}>
+              <div className="modal">
+                <div className="m-title">Editar <span>Win ✏️</span></div>
+                <div className="fg"><label className="fl">¿Cuál fue el logro?</label>
+                  <textarea className="fta" value={ew.description} onChange={e=>setEw(f=>({...f,description:e.target.value}))}/></div>
+                <div className="fg"><label className="fl">¿Quién lo logró?</label>
+                  <select className="fi" value={ew.author} onChange={e=>setEw(f=>({...f,author:e.target.value}))}>
+                    <option value="">Selecciona una persona</option>
+                    {TEAM.map(t=><option key={t} value={t}>{t}</option>)}
+                  </select></div>
+                <div className="fg"><label className="fl">Cliente</label>
+                  <select className="fi" value={ew.client} onChange={e=>setEw(f=>({...f,client:e.target.value}))}>
+                    <option value="">Selecciona un cliente</option>
+                    {CLIENTS.map(c=><option key={c} value={c}>{c}</option>)}
+                  </select></div>
+                <div className="fg"><label className="fl">Categoría</label>
+                  <div className="pills">
+                    {WIN_CATEGORIES.map(c=>(
+                      <button key={c} className={`pill ${ew.category===c?"sel":""}`} onClick={()=>setEw(f=>({...f,category:c}))}>{c}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="factions">
+                  <button className="btn-no" onClick={()=>setEditWin(null)}>Cancelar</button>
+                  <button className="btn-ok" onClick={saveEditWin}>Guardar cambios</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {editChallenge && (
+            <div className="overlay" onClick={e=>e.target===e.currentTarget&&setEditChallenge(null)}>
+              <div className="modal">
+                <div className="m-title">Editar <span style={{color:"#A78BFA"}}>Reto ✏️</span></div>
+                <div className="fg"><label className="fl">Descripción del reto</label>
+                  <textarea className="fta" value={ec.description} onChange={e=>setEc(f=>({...f,description:e.target.value}))}/></div>
+                <div className="fg"><label className="fl">¿Quién lo propone?</label>
+                  <select className="fi" value={ec.author} onChange={e=>setEc(f=>({...f,author:e.target.value}))}>
+                    <option value="">Selecciona una persona</option>
+                    {TEAM.map(t=><option key={t} value={t}>{t}</option>)}
+                  </select></div>
+                <div className="fg"><label className="fl">Tipo</label>
+                  <div className="pills">
+                    {CHALLENGE_TYPES.map(o=>(
+                      <button key={o} className={`pill ${ec.week===o?"selp":""}`} onClick={()=>setEc(f=>({...f,week:o}))}>{o}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="factions">
+                  <button className="btn-no" onClick={()=>setEditChallenge(null)}>Cancelar</button>
+                  <button className="btn-ok p" onClick={saveEditChallenge}>Guardar cambios</button>
                 </div>
               </div>
             </div>
