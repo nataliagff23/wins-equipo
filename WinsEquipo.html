@@ -334,7 +334,7 @@
 
     function AgencyWins() {
       const now = new Date();
-      const cm = now.getMonth() + 1, cy = now.getFullYear();
+      const cm = now.getMonth() + 1, cy = now.getFullYear(), cmName = MONTH_NAMES[now.getMonth()];
 
       const [view, setView] = useState("wins");
       const [wins, setWins] = useState([]);
@@ -440,11 +440,11 @@
         if(type==="wins"){
           const mw=wins.filter(w=>w.month===cm&&w.year===cy);
           csv="WIN,Responsable,Cliente,Categoria,Fecha\n"+mw.map(w=>`"${w.description}","${w.author}","${w.client}","${w.category}","${w.date}"`).join("\n");
-          filename=`wins_${MONTH_NAMES[cm]}_${cy}.csv`;
+          filename=`wins_${cmName}_${cy}.csv`;
         }else{
           const mr=challenges;
           csv="Descripcion,Autor,Tipo,Fecha,Resuelto,Resuelto Por,Como se resolvio\n"+mr.map(r=>`"${r.description}","${r.author}","${r.week}","${r.date}","${r.solved?"Sí":"No"}","${r.resueltoPor}","${r.resolucion}"`).join("\n");
-          filename=`retos_${MONTH_NAMES[cm]}_${cy}.csv`;
+          filename=`retos_${cmName}_${cy}.csv`;
         }
         const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
         const url=URL.createObjectURL(blob);
@@ -493,7 +493,7 @@
                   <div className="t-count">{monthWins} / {MONTHLY_GOAL} wins</div>
                 </div>
                 <div className="tr">
-                  <div className="t-month">Wins de {MONTH_NAMES[cm]}</div>
+                  <div className="t-month">Wins de {cmName}</div>
                   <div className="t-sub">Meta mensual del equipo — cada win llena la copa</div>
                   <div className="prog"><div className="prog-fill" style={{width:`${fillPct}%`}}/></div>
                   <div className="prog-lbls">
