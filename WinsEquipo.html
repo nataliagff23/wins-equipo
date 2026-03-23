@@ -334,7 +334,7 @@
 
     function AgencyWins() {
       const now = new Date();
-      const cm = now.getMonth(), cy = now.getFullYear();
+      const cm = now.getMonth() + 1, cy = now.getFullYear();
 
       const [view, setView] = useState("wins");
       const [wins, setWins] = useState([]);
