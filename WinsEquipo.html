@@ -169,10 +169,8 @@
   <script type="text/babel">
     const { useState, useRef, useEffect } = React;
 
-    // ── CONFIGURACIÓN AIRTABLE ──────────────────────────────────────────
+    // ── AIRTABLE (el navegador llama al proxy) ───────────────────────
     const AT = {
-      token:  "patE3pKIZVZjdmNFC.0a09eae0d53eca689c7e01868b16839260d2d84f942f86379878dba4d5cf4413",
-      baseId: "appT08Cl4u2lVE1Td",
       wins:   "WinsBoard",
       retos:  "RetosBoard",
     };
@@ -191,34 +189,24 @@
       return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
     };
 
-    const atUrl  = (table, id="") => `https://api.airtable.com/v0/${AT.baseId}/${encodeURIComponent(table)}${id ? "/"+id : ""}`;
-    const atHdr  = () => ({ "Authorization": `Bearer ${AT.token}`, "Content-Type": "application/json" });
 
-    const atGetAll = async (table) => {
-      let records = [], offset = "";
-      do {
-        const url = atUrl(table) + (offset ? `?offset=${offset}` : "");
-        const r = await fetch(url, { headers: atHdr() });
-        const d = await r.json();
-        if (d.error) throw new Error(d.error.message);
-        records = records.concat(d.records || []);
-        offset = d.offset || "";
-      } while (offset);
-      return records;
-    };
-    const atCreate = async (table, fields) => {
-      const r = await fetch(atUrl(table), { method:"POST", headers:atHdr(), body:JSON.stringify({fields}) });
-      const d = await r.json();
-      if (d.error) throw new Error(d.error.message);
+    const atRequest = async (table, { method = "GET", id = "", fields } = {}) => {
+      const params = new URLSearchParams({ table });
+      if (id) params.set("id", id);
+      const options = { method };
+      if (method !== "GET") {
+        options.headers = { "Content-Type": "application/json" };
+        options.body = JSON.stringify({ fields });
+      }
+      const r = await fetch("/api/airtable?" + params.toString(), options);
+      let d = {};
+      try { d = await r.json(); } catch (_) {}
+      if (!r.ok || d.error) throw new Error((d.error && d.error.message) || "No se pudo completar la operación");
       return d;
     };
-    const atUpdate = async (table, id, fields) => {
-      const r = await fetch(atUrl(table, id), { method:"PATCH", headers:atHdr(), body:JSON.stringify({fields}) });
-      const d = await r.json();
-      if (d.error) throw new Error(d.error.message);
-      return d;
-    };
-
+    const atGetAll = async (table) => (await atRequest(table)).records || [];
+    const atCreate = (table, fields) => atRequest(table, { method: "POST", fields });
+    const atUpdate = (table, id, fields) => atRequest(table, { method: "PATCH", id, fields });
     // WINS - Imperians: WIN, Responsable, Fecha, Categoria, Cliente, Mes, Anio, DesdReto
     const winFromRecord  = (rec) => ({ _id:rec.id, id:rec.id, description:rec.fields["WIN"]||"", category:rec.fields.Categoria||"", author:rec.fields.Responsable||"", client:rec.fields.Cliente||"", date:rec.fields.Fecha||"", fromChallenge:!!rec.fields.DesdReto, month:rec.fields.Mes??0, year:rec.fields.Anio??0 });
     // Retos: Descripcion, Autor, Tipo, Fecha, Resuelto, Resolucion, ResueltoPor
@@ -361,7 +349,7 @@
             setWins(wRecs.map(winFromRecord).reverse());
             setChallenges(rRecs.map(retoFromRecord).reverse());
           } catch(e) {
-            setError("No se pudo conectar con Airtable. Revisa tu token y Base ID.");
+            setError("No se pudo conectar con el servidor.");
           } finally { setLoading(false); }
         })();
       }, []);

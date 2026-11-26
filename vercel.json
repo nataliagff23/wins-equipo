@@ -1,3 +1,11 @@
 {
-  "rewrites": [{ "source": "/", "destination": "/WinsEquipo.html" }]
+  "rewrites": [{ "source": "/", "destination": "/WinsEquipo.html" }],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "https://wins.imperiansapps.com" }
+      ]
+    }
+  ]
 }
