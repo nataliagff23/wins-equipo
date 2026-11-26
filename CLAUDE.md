@@ -9,28 +9,30 @@ Aplicación web SPA para **Imperians Agency** que permite al equipo registrar lo
 ## Arquitectura
 
 ### Tipo de Proyecto
-- **Single HTML file** — toda la app vive en `WinsEquipo.html` (CSS + JS + HTML)
+- **Single HTML file** — la interfaz vive en `WinsEquipo.html` (CSS + JS + HTML)
 - **React 18** cargado vía CDN (UMD build, sin bundler)
 - **Babel Standalone** para transpilación JSX en el navegador
-- **Sin build process** — se abre directamente en el navegador o se despliega como archivo estático
+- **Funciones de Vercel** en `/api` para hablar con Airtable. El HTML no tiene bundler
 
 ### Despliegue
 - **Plataforma:** Vercel
 - **Config:** `vercel.json` redirige todo a `/WinsEquipo.html`
-- **Dev local:** abrir `WinsEquipo.html` directo en el navegador (requiere internet para CDNs y Airtable)
+- **Dev local:** servir el proyecto por HTTP. El front llama a `/api/airtable`; en Vercel esa ruta lee `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID` y `APP_ORIGIN`
 
 ---
 
 ## Backend — Airtable
 
-```javascript
-const AT = {
-  token: "patE3pKIZVZjdmNFC...",   // Personal Access Token
-  baseId: "appT08Cl4u2lVE1Td",
-  wins: "WinsBoard",
-  retos: "RetosBoard"
-};
-```
+El navegador no habla con Airtable ni guarda credenciales. Llama a `/api/airtable`, y la función de Vercel reenvía la petición con estas variables de entorno:
+
+- `AIRTABLE_TOKEN` — secreto, solo en el servidor
+- `AIRTABLE_BASE_ID` — id de la base
+- `APP_ORIGIN` — origen permitido del front (`https://wins.imperiansapps.com`)
+
+La función acepta ese origen y los hosts del propio despliegue de Vercel (producción y preview). Un GET same-origin puede llegar sin `Origin`; en ese caso vale el `Referer` o `Sec-Fetch-Site: same-origin`. Un origen cruzado recibe 403 y Airtable no se consulta.
+
+Solo se permiten las tablas `WinsBoard` y `RetosBoard`, los métodos GET, POST y PATCH, y los campos que usa el front.
+
 
 ### Tablas Airtable
 
@@ -43,7 +45,7 @@ const AT = {
 | Cliente     | Nombre del cliente             |
 | Fecha       | Fecha formateada (DD MMM YYYY) |
 | DesdReto    | Boolean — viene de un reto     |
-| Mes         | Número de mes (0–11)           |
+| Mes         | Número de mes (1–12)           |
 | Anio        | Año completo                   |
 
 **RetosBoard** — Campos:
@@ -58,9 +60,9 @@ const AT = {
 | ResueltoPor | Miembro que resolvió el reto         |
 
 ### Funciones API
-- `atGetAll(table)` — GET con paginación (offset automático)
+- `atGetAll(table)` — GET `/api/airtable`; el servidor pagina con un tope
 - `atCreate(table, fields)` — POST para crear registro
-- `atUpdate(table, id, fields)` — PATCH para actualizar registro
+- `atUpdate(table, id, fields)` — PATCH para actualizar un id `rec`
 
 ---
 
@@ -214,10 +216,15 @@ particles         // array — confetti
 
 ```
 Wins Equipo/
-├── WinsEquipo.html          # App completa (toda la lógica aquí)
+├── WinsEquipo.html          # Interfaz
+├── api/airtable.js          # Proxy hacia Airtable
+├── lib/airtable-proxy.js    # Guardia, lista blanca y cliente
+├── scripts/scan-secrets.mjs # Falla si el árbol o el build tienen credenciales
+├── test/                    # node:test
 ├── vercel.json              # Configuración Vercel
 ├── CLAUDE.md                # Este archivo
 ├── README.md                # Readme del proyecto
+├── package.json             # Scripts de prueba, sin dependencias
 ├── .gitignore
 └── Branding Imperians/
     └── logo.png             # Logo de la agencia
@@ -227,9 +234,9 @@ Wins Equipo/
 
 ## Notas Importantes para Desarrollo
 
-1. **Token Airtable expuesto** en el código fuente — no es ideal para seguridad pero es aceptable para uso interno del equipo
-2. **Sin bundler** — no usar `import/export`, todo debe ser funciones/variables en el mismo scope
-3. **Sin npm** — no hay `package.json`, las dependencias van como `<script>` CDN en el HTML
+1. **La credencial de Airtable solo vive en el servidor**, en `AIRTABLE_TOKEN`. No va en el HTML ni en este archivo
+2. **Sin bundler en el HTML** — el navegador no usa `import/export`. Las funciones de `/api` sí son módulos
+3. **Sin dependencias npm** — React y Babel siguen por CDN. `package.json` solo declara `node --test` y el escaneo
 4. **Datos del mes actual** se filtran en el frontend, no en Airtable (se traen todos los registros)
 5. Al resolver un reto, se crea automáticamente un win con `fromChallenge: true`
 6. Las fechas se formatean con un helper custom (`fmt(date)`) — formato "DD MMM YYYY" en español
