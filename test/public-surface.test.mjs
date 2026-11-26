@@ -32,4 +32,22 @@ test("vercel.json no publica Access-Control-Allow-Origin *", () => {
     values.some((header) => header.key === "Access-Control-Allow-Origin" && header.value === "https://wins.imperiansapps.com"),
     true,
   );
+  assert.equal(values.some((header) => header.key === "X-Frame-Options" && header.value === "DENY"), true);
+  assert.equal(values.some((header) => header.key === "X-Content-Type-Options" && header.value === "nosniff"), true);
+});
+
+test("React y Babel están fijados y traen integridad", () => {
+  const html = fs.readFileSync(path.join(root, "WinsEquipo.html"), "utf8");
+  const scripts = [...html.matchAll(/<script\b([^>]*)><\/script>/g)].map((match) => match[1]);
+  const cdn = scripts.filter((attrs) => attrs.includes("unpkg.com"));
+  assert.deepEqual(cdn.map((attrs) => attrs.match(/src="([^"]+)"/)[1]), [
+    "https://unpkg.com/react@18.3.1/umd/react.development.js",
+    "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+    "https://unpkg.com/@babel/standalone@8.1.3/babel.min.js",
+  ]);
+  for (const attrs of cdn) {
+    assert.match(attrs, /integrity="sha384-[A-Za-z0-9+/=]+"/);
+    assert.match(attrs, /crossorigin="anonymous"/);
+    assert.equal(attrs.includes("@18/"), false);
+  }
 });

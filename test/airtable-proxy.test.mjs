@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import handler from "../api/airtable.js";
-import { MAX_BODY_BYTES, MAX_PAGES, handleAirtableRequest } from "../lib/airtable-proxy.js";
+import { MAX_BODY_BYTES, MAX_PAGES, UPSTREAM_TIMEOUT_MS, handleAirtableRequest } from "../lib/airtable-proxy.js";
 
 const APP = "https://wins.imperiansapps.com";
 const TOKEN = "test-token-value";
@@ -144,6 +144,14 @@ test("APP_ORIGIN con barra final vale y un asterisco no abre la guardia", async 
   assert.equal(allowed.status, 200);
   const blocked = await call({ origin: "https://cualquiera.example" }, forbidFetch(), { APP_ORIGIN: "*" });
   assert.equal(blocked.status, 403);
+});
+
+test("rechaza un APP_ORIGIN que no es https", async () => {
+  const httpOrigin = "http://wins.imperiansapps.com";
+  const sameScheme = await call({ origin: httpOrigin }, forbidFetch(), { APP_ORIGIN: httpOrigin });
+  assert.equal(sameScheme.status, 403);
+  const mixed = await call({ origin: httpOrigin }, forbidFetch(), { APP_ORIGIN: APP });
+  assert.equal(mixed.status, 403);
 });
 
 test("rechaza otro método, otra tabla y parámetros que no están en la lista", async () => {
@@ -311,6 +319,106 @@ test("un fallo de Airtable no se reenvía si el cuerpo menciona la credencial", 
   assert.equal(result.status, 502);
   assert.equal(result.text.includes(TOKEN), false);
   assert.equal(result.text.includes("Invalid token"), false);
+});
+
+test("en PATCH la categoría y el tipo pueden ir vacíos u omitidos", async () => {
+  const emptyCategory = mockFetch(async (callInfo) => {
+    const sent = JSON.parse(callInfo.init.body);
+    assert.equal(sent.fields.Categoria, "");
+    return upstreamRecord({ WIN: "Hola", Categoria: "" });
+  });
+  const patched = await call({
+    method: "PATCH",
+    id: REC,
+    body: { fields: { Categoria: "" } },
+  }, emptyCategory.impl);
+  assert.equal(patched.status, 200);
+
+  const omitted = mockFetch(async (callInfo) => {
+    const sent = JSON.parse(callInfo.init.body);
+    assert.equal(Object.hasOwn(sent.fields, "Categoria"), false);
+    return upstreamRecord({ WIN: "Solo el texto" });
+  });
+  const withoutCategory = await call({
+    method: "PATCH",
+    id: REC,
+    body: { fields: { WIN: "Solo el texto", Responsable: "Natalia Goncalves", Cliente: "Interno" } },
+  }, omitted.impl);
+  assert.equal(withoutCategory.status, 200);
+
+  const emptyType = mockFetch(async (callInfo) => {
+    const sent = JSON.parse(callInfo.init.body);
+    assert.equal(sent.fields.Tipo, "");
+    return new Response(JSON.stringify({ id: REC, fields: { Descripcion: "Reto", Tipo: "" } }), { status: 200 });
+  });
+  const reto = await call({
+    method: "PATCH",
+    table: "RetosBoard",
+    id: REC,
+    body: { fields: { Tipo: "" } },
+  }, emptyType.impl);
+  assert.equal(reto.status, 200);
+
+  const omittedType = mockFetch(async () => new Response(JSON.stringify({
+    id: REC,
+    fields: { Descripcion: "Reto editado" },
+  }), { status: 200 }));
+  const retoWithoutType = await call({
+    method: "PATCH",
+    table: "RetosBoard",
+    id: REC,
+    body: { fields: { Descripcion: "Reto editado", Autor: "Natalia Goncalves" } },
+  }, omittedType.impl);
+  assert.equal(retoWithoutType.status, 200);
+
+  assert.equal((await call({
+    method: "POST",
+    body: { fields: { ...winFields, Categoria: "" } },
+  })).status, 400);
+  const { Categoria, ...winWithoutCategory } = winFields;
+  assert.equal((await call({
+    method: "POST",
+    body: { fields: winWithoutCategory },
+  })).status, 400);
+  assert.equal((await call({
+    method: "POST",
+    table: "RetosBoard",
+    body: { fields: { Descripcion: "Reactivar la cuenta", Autor: "Natalia Goncalves", Tipo: "", Fecha: "26 nov 2026", Resuelto: false } },
+  })).status, 400);
+  assert.equal((await call({
+    method: "POST",
+    table: "RetosBoard",
+    body: { fields: { Descripcion: "Reactivar la cuenta", Autor: "Natalia Goncalves", Fecha: "26 nov 2026", Resuelto: false } },
+  })).status, 400);
+  assert.equal((await call({
+    method: "PATCH",
+    id: REC,
+    body: { fields: { WIN: "" } },
+  })).status, 400);
+});
+
+test("un Airtable que no responde se corta a los 10 segundos", async () => {
+  assert.equal(UPSTREAM_TIMEOUT_MS, 10_000);
+  const fetchImpl = mockFetch(async (callInfo) => {
+    assert.ok(callInfo.init.signal instanceof AbortSignal);
+    assert.equal(callInfo.init.signal.aborted, false);
+    const error = new Error("The operation was aborted due to timeout");
+    error.name = "TimeoutError";
+    throw error;
+  });
+  const result = await call({}, fetchImpl.impl);
+  assert.equal(result.status, 504);
+  assert.equal(result.body.error.message, "Airtable no respondió a tiempo");
+  assert.equal(fetchImpl.calls.length, 1);
+});
+
+test("un corte de red no se informa como timeout", async () => {
+  await assert.rejects(
+    () => handleAirtableRequest(request(), env(), async () => {
+      throw new Error("econnreset");
+    }),
+    { message: "econnreset" },
+  );
 });
 
 test("sin configuración no llama a Airtable", async () => {
